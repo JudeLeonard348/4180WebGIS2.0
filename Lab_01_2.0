@@ -1,3 +1,15 @@
 <html>
 <head>
 <title>Lab 1 for Web GIS</title
+</head>
+<body>
+<h1>Lab 1 for Web GIS</h1>
+<h3> Name: Jude Leonard</h3>
+<!--This is a comment-->
+</body>
+</html>
+<h3> Map of UNC-Charlotte</h3>
+<img
+src="https://maps.googleapis.com/maps/api/staticmap?center=UNCC,Charlotte,N
+C&zoom=14&scale=1&size=512x512&maptype=hybrid&sensor=false&key=AIzaSyB5U-
+lTv1hoJo_-ON8qVBXtEGXfZI80S7k" alt="Google Map">
