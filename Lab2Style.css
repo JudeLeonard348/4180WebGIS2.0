@@ -1,0 +1,86 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+html { height: 100%;  
+    
+}
+body {
+    height: 100%;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    background-color: #111021da;
+    color: #e6e4e4;
+    line-height: 1.6;
+    padding: 20px;
+}
+
+a{
+    color: #ffffff;
+    text-decoration: none;
+}
+
+ul{
+    list-style: none;
+}
+
+img{
+    max-width: 100%;
+    height: auto;
+}
+.center {
+    margin: auto;
+    width: 50%;
+    border: 3px solid #0f621f;
+    padding: 10px;
+}
+/* Ensure elements using the helper class center their text */
+.center, .center p {
+    text-align: center;
+}
+/* Center common headings so page title and section headings align */
+h1, h2, h3, h4 {
+    text-align: center;
+}
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+    position: relative;   
+}
+.glowing-border {
+    font-weight: bold;
+    color: #ffffff;
+    text-align: center;
+    text-shadow: 0 0 5px #0f621f, 0 0 10px #0f621f, 0 0 20px #0f621f, 0 0 40px #0f621f;}
+p {
+    text-align: center;
+    font-size: 20px;
+    color: #fffcfc;
+}
+
+/* Map containers: central place to control size and layout */
+.map {
+    width: 50%;
+    height: 50vh;
+    margin: 0.5rem auto 1.5rem auto; /* center and space */
+    border: 2px solid #0f621f;
+     border-style: noraml;
+    border-color: #0f621f;
+    border-width: 5px;
+    border-radius: 10px;
+    padding:5px;
+    background-image: conic-gradient(from 180deg at 50% 50%, #7298b6, #b56c6d, #1b2a1d);
+    
+}
+
+*{
+    text-align: center;
+}
+h1{
+    font-family: 'Montserrat', sans-serif;
+    font-weight: bold;font-size: 50px;font-style: 'outset';
+    color: #25793a;
+}
