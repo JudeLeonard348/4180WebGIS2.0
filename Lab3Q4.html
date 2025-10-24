@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Tasmania Web GIS</title>
+
+<!-- OpenLayers -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.6.1/ol.css" />
+<script src="https://cdn.jsdelivr.net/npm/ol@v10.6.1/dist/ol.js"></script>
+
+<!-- Layer Switcher -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol-layerswitcher@4.1.2/dist/ol-layerswitcher.css" />
+<script src="https://cdn.jsdelivr.net/npm/ol-layerswitcher@4.1.2/dist/ol-layerswitcher.js"></script>
+
+<style>
+  html, body { height: 100%; margin: 0; font-family: Arial, sans-serif; }
+  #header {
+    padding: 10px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ccc;
+  }
+  #map { width: 100%; height: calc(100vh - 60px); } /* leave space for header */
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h3>Lab 3: Question 4</h3>
+  <h4>Author: Jude Leonard</h4>
+</div>
+
+<div id="map"></div>
+
+<script>
+const AZURE_KEY = "81u9AnyuE91GBupq2rrMNIytJcQQ6dExViU2bLHif4cC9VSKQpuIJQQJ99BJACYeBjFNMnj2AAAgAZMP4Q3s";
+const wmsUrl = "https://data.stategrowth.tas.gov.au/geoserver/ows";
+
+// Tasmania center
+const tasCenter = ol.proj.fromLonLat([146.8, -42.0]);
+// Base layer: Azure Road
+const azureRoad = new ol.layer.Tile({
+  title: "Azure Maps Road",
+  type: "base",
+  visible: true,
+  source: new ol.source.XYZ({
+    url: `https://atlas.microsoft.com/map/tile?api-version=2022-08-01&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}&subscription-key=${AZURE_KEY}`,
+    crossOrigin: "anonymous",
+    maxZoom: 19
+  })
+});
+
+// WMS layers
+const carriageways = new ol.layer.Tile({
+  title: "Carriageways (WMS)",
+  source: new ol.source.TileWMS({
+    url: wmsUrl,
+    params: {
+      LAYERS: "ssg:GEO_CARRIAGEWAY",
+      FORMAT: "image/png",
+      TRANSPARENT: true,
+      VERSION: "1.3.0",
+      CRS: "CRS:84"
+    },
+    serverType: "geoserver",
+    crossOrigin: "anonymous"
+  }),
+  visible: true
+});
+
+const cadastre = new ol.layer.Tile({
+  title: "Cadastre Parcels (WMS)",
+  source: new ol.source.TileWMS({
+    url: wmsUrl,
+    params: {
+      LAYERS: "pam:GEO_CADASTRE",
+      FORMAT: "image/png",
+      TRANSPARENT: true,
+      VERSION: "1.3.0",
+      CRS: "CRS:84"
+    },
+    serverType: "geoserver",
+    crossOrigin: "anonymous"
+  }),
+  visible: false
+});
+
+const busTrips = new ol.layer.Tile({
+  title: "Bus Trips (WMS)",
+  source: new ol.source.TileWMS({
+    url: wmsUrl,
+    params: {
+      LAYERS: "ssg:GEO_BRM_TRIP",
+      FORMAT: "image/png",
+      TRANSPARENT: true,
+      VERSION: "1.3.0",
+      CRS: "CRS:84"
+    },
+    serverType: "geoserver",
+    crossOrigin: "anonymous"
+  }),
+  visible: false
+});
+
+// Map
+/* Build controls safely and create the map; avoid injecting CSS inside the JS object literal and expose the map as window.map */
+(function(){
+  // prepare controls array
+  const controls = [
+    new ol.control.Zoom()
+  ];
+
+  // LayerSwitcher may be exposed as LayerSwitcher or ol.control.LayerSwitcher depending on library version — pick whichever exists
+  let layerSwitcherControl = null;
+  if(typeof LayerSwitcher !== 'undefined'){
+    try{ layerSwitcherControl = new LayerSwitcher({ tipLabel: "Layers", groupSelectStyle: "children" }); }catch(e){}
+  }
+  if(!layerSwitcherControl && ol && ol.control && typeof ol.control.LayerSwitcher !== 'undefined'){
+    try{ layerSwitcherControl = new ol.control.LayerSwitcher({ tipLabel: "Layers", groupSelectStyle: "children" }); }catch(e){}
+  }
+  if(layerSwitcherControl) controls.push(layerSwitcherControl);
+
+  // custom legend-toggle control (injects styles once and softly enhances LayerSwitcher pane when present)
+  controls.push((function(){
+      const container = document.createElement('div');
+      container.className = 'legend-toggle-control ol-unselectable ol-control';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.title = 'Toggle Legend';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.innerHTML = '&#128269;'; // simple magnifier icon
+      btn.style.cssText = [
+          'display:inline-grid;place-items:center;',
+          'width:38px;height:38px;border-radius:10px;',
+          'border:0;cursor:pointer;background:linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));',
+          'backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);',
+          'box-shadow: 0 6px 16px rgba(2,6,23,0.12); color:#fff; font-size:16px;'
+      ].join('');
+
+    container.appendChild(btn);
+    // position the toggle beneath the zoom control (adjust dynamically if the zoom control is added/changed)
+    container.style.position = 'absolute';
+    container.style.zIndex = '1300';
+
+    function updateLegendTogglePosition(){
+      const gap = 8; // px gap between zoom control and legend toggle
+      // try common OL zoom control selectors (library versions vary)
+      let zoomEl = document.querySelector('.ol-zoom') ||
+                   document.querySelector('.ol-control .ol-zoom') ||
+                   document.querySelector('.ol-control button.ol-zoom-in') ||
+                   document.querySelector('.ol-control .ol-zoom-in');
+
+      if(zoomEl){
+        // if we selected a button inside the control, walk up to the control element
+        if(/button/i.test(zoomEl.tagName)) zoomEl = zoomEl.closest('.ol-zoom') || zoomEl.parentElement;
+
+        const rect = zoomEl.getBoundingClientRect();
+        // position relative to viewport; map container is positioned at top-left of viewport in this layout
+        container.style.top = (rect.bottom + gap) + 'px';
+        // keep same left alignment as the zoom control
+        container.style.left = rect.left + 'px';
+        // clear bottom if previously set
+        container.style.bottom = '';
+      } else {
+        // fallback: place under typical header area (approximate)
+        container.style.top = '74px';
+        container.style.left = '12px';
+        container.style.bottom = '';
+      }
+    }
+
+    updateLegendTogglePosition();
+
+    // watch for zoom control insertion/DOM changes and for size changes
+    const mo = new MutationObserver(() => updateLegendTogglePosition());
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+    // if ResizeObserver available, attach to zoom control when present for precise updates
+    function attachResizeWatcher(){
+      const zoomEl = document.querySelector('.ol-zoom') || document.querySelector('.ol-control .ol-zoom') || document.querySelector('.ol-control button.ol-zoom-in');
+      if(!zoomEl) return;
+      const ctrlEl = /button/i.test(zoomEl.tagName) ? (zoomEl.closest('.ol-zoom') || zoomEl.parentElement) : zoomEl;
+      if(window.ResizeObserver && ctrlEl){
+        try{
+          const ro = new ResizeObserver(updateLegendTogglePosition);
+          ro.observe(ctrlEl);
+        }catch(e){}
+      }
+    }
+    attachResizeWatcher();
+    // re-run attachment when DOM changes (so we catch the zoom control when it's inserted)
+    const attachObserver = new MutationObserver((m, o) => { attachResizeWatcher(); });
+    attachObserver.observe(document.body, { childList: true, subtree: true });
+
+    window.addEventListener('resize', updateLegendTogglePosition);
+
+      // inject styles once
+      if(!document.getElementById('map-legend-styles')){
+          const style = document.createElement('style');
+          style.id = 'map-legend-styles';
+          style.textContent = `
+/* Glassy legend base */
+.map-legend{
+    position:absolute;
+    left:12px;
+    bottom:12px;
+    z-index:1200;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+    border-radius:12px;
+    padding:12px 14px;
+    box-shadow:0 6px 30px rgba(2,6,23,0.12);
+    color:#0b1220;
+    font-size:13px;
+    line-height:1.4;
+    backdrop-filter: blur(8px) saturate(120%);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    border: 1px solid rgba(255,255,255,0.06);
+    transform-origin: left bottom;
+    transition: transform 320ms cubic-bezier(.2,.9,.2,1), box-shadow 320ms, opacity 250ms;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px) scale(0.98);
+    max-width:320px;
+}
+
+/* Open state: glowing border + appear animation */
+.map-legend.open{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    box-shadow:
+        0 12px 36px rgba(2,6,23,0.24),
+        0 0 28px rgba(139,92,246,0.18);
+    border: 1px solid rgba(139,92,246,0.6);
+    animation: legend-pop 360ms cubic-bezier(.2,.9,.2,1);
+}
+
+/* subtle pop animation */
+@keyframes legend-pop{
+    0% { transform: translateY(10px) scale(0.98); opacity:0; filter: blur(2px); }
+    60% { transform: translateY(-4px) scale(1.02); opacity:1; filter: blur(0); }
+    100% { transform: translateY(0) scale(1); opacity:1; filter: none; }
+}
+
+/* Toggle button hover */
+.legend-toggle-control button:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(14,21,47,0.18);
+}
+
+/* ensure the legend contents still look good */
+.map-legend strong{ display:block; margin-bottom:6px; font-weight:700; color: rgba(11,18,32,0.95); }
+
+/* Layers pane (ol-layerswitcher) base style affordances */
+.ol-layerswitcher{
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+    border-radius:12px;
+    padding:10px;
+    box-shadow:0 8px 28px rgba(2,6,23,0.12);
+    color:#0b1220;
+    font-size:13px;
+    line-height:1.35;
+    backdrop-filter: blur(8px) saturate(120%);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    border: 1px solid rgba(255,255,255,0.06);
+    transform-origin: right top;
+    transition: transform 320ms cubic-bezier(.2,.9,.2,1), box-shadow 320ms, opacity 250ms;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px) scale(0.98);
+    position: relative;
+}
+
+.ol-layerswitcher.open{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    box-shadow:
+        0 16px 48px rgba(2,6,23,0.28),
+        0 0 36px rgba(139,92,246,0.18);
+    border: 1px solid rgba(139,92,246,0.6);
+    animation: layers-pop 360ms cubic-bezier(.2,.9,.2,1);
+}
+
+@keyframes layers-pop{
+    0% { transform: translateY(-10px) scale(0.98); opacity:0; filter: blur(2px); }
+    60% { transform: translateY(6px) scale(1.02); opacity:1; filter: blur(0); }
+    100% { transform: translateY(0) scale(1); opacity:1; filter: none; }
+}
+
+.ol-layerswitcher .layers-toggle-btn{
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    width:36px;
+    height:36px;
+    display:inline-grid;
+    place-items:center;
+    border-radius:8px;
+    border:0;
+    cursor:pointer;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 6px 14px rgba(2,6,23,0.10);
+    color:#fff;
+    font-size:16px;
+}
+
+.ol-layerswitcher .layers-toggle-btn:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(14,21,47,0.16);
+}
+
+@media (max-width:640px){
+    .ol-layerswitcher{ opacity:1; transform:none; pointer-events:auto; }
+}
+          `;
+          document.head.appendChild(style);
+      }
+
+      // toggle behavior for legend button
+      btn.addEventListener('click', function(){
+          const legend = document.querySelector('.map-legend');
+          if(!legend) return;
+          const isOpen = legend.classList.toggle('open');
+          btn.setAttribute('aria-pressed', String(isOpen));
+          legend.setAttribute('aria-hidden', String(!isOpen));
+          if(isOpen) legend.scrollIntoView({behavior:'smooth', block:'end'});
+      });
+
+      // try to enhance LayerSwitcher pane when it becomes available
+      function enhanceLayerSwitcherPane(lsEl){
+          if(!lsEl) return;
+          if(getComputedStyle(lsEl).position === 'static'){
+              lsEl.style.position = 'relative';
+          }
+          if(!lsEl.querySelector('.layers-toggle-btn')){
+              const lbtn = document.createElement('button');
+              lbtn.type = 'button';
+              lbtn.className = 'layers-toggle-btn';
+              lbtn.title = 'Toggle Layers Pane';
+              lbtn.setAttribute('aria-pressed','false');
+              lbtn.innerHTML = '&#9776;';
+              lsEl.appendChild(lbtn);
+
+              lbtn.addEventListener('click', function(evt){
+                  evt.stopPropagation();
+                  const isOpen = lsEl.classList.toggle('open');
+                  lbtn.setAttribute('aria-pressed', String(isOpen));
+                  lsEl.setAttribute('aria-hidden', String(!isOpen));
+                  if(isOpen) lsEl.scrollIntoView({behavior:'smooth', block:'nearest'});
+              });
+
+              lsEl.addEventListener('mouseenter', ()=> lsEl.classList.add('open'));
+              lsEl.addEventListener('mouseleave', ()=> lsEl.classList.remove('open'));
+              lsEl.addEventListener('focusin', ()=> lsEl.classList.add('open'));
+              lsEl.addEventListener('focusout', ()=> lsEl.classList.remove('open'));
+
+              const mo = new MutationObserver(()=> {
+                  const visible = (lsEl.offsetWidth > 0 && lsEl.offsetHeight > 0);
+                  if(visible) lsEl.classList.add('open');
+                  else lsEl.classList.remove('open');
+              });
+              mo.observe(lsEl, { attributes: true, childList: true, subtree: true });
+          }
+      }
+
+      // attempt immediate enhancement and also watch for future insertion
+      enhanceLayerSwitcherPane(document.querySelector('.ol-layerswitcher'));
+      const bodyObserver = new MutationObserver((mutations, obs) => {
+          const ls = document.querySelector('.ol-layerswitcher');
+          if(ls){
+              enhanceLayerSwitcherPane(ls);
+              obs.disconnect();
+          }
+      });
+      bodyObserver.observe(document.body, { childList: true, subtree: true });
+
+      return new ol.control.Control({ element: container });
+  })());
+
+  // create the map and expose it as window.map so other scripts can reference it
+  const map = new ol.Map({
+    target: "map",
+    layers: [
+      new ol.layer.Group({ title: "Base Maps", layers: [azureRoad] }),
+      new ol.layer.Group({ title: "Tasmania Overlays", layers: [carriageways, cadastre, busTrips] })
+    ],
+    view: new ol.View({
+      center: tasCenter,
+      zoom: 7
+    }),
+    controls: controls
+  });
+
+  // expose as global for other scripts that reference window.map
+  window.map = map;
+})();
+</script>
+
+</body>
+</html>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+    :root{
+        --accent1:#0ea5e9;
+        --accent2:#8b5cf6;
+        --glass: rgba(255,255,255,0.9);
+        --muted: #6b7280;
+    }
+    /* Modern header */
+    #header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:12px 18px;
+        background:linear-gradient(90deg,var(--accent1),var(--accent2));
+        color:#fff;
+        box-shadow:0 6px 20px rgba(14,21,47,0.18);
+        font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    #header h3{ margin:0; font-weight:600; font-size:1.05rem; letter-spacing:0.2px; }
+    #header h4{ margin:0; font-weight:400; font-size:0.9rem; color:rgba(255,255,255,0.9); opacity:0.95; }
+    .header-right{ display:flex; gap:10px; align-items:center; }
+
+    /* Search */
+    .search-box{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        background: rgba(255,255,255,0.12);
+        padding:6px 10px;
+        border-radius:10px;
+        backdrop-filter: blur(6px);
+    }
+    .search-box input{
+        background:transparent;
+        border:0;
+        outline:0;
+        color:#fff;
+        font-size:0.95rem;
+        width:220px;
+    }
+    .search-box button{
+        background:transparent;
+        border:1px solid rgba(255,255,255,0.18);
+        color:#fff;
+        padding:6px 8px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:600;
+    }
+
+    /* Floating controls & layer switcher styling */
+    .controls-panel{
+        position: absolute;
+        right:12px;
+        top:74px;
+        z-index:1200;
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        pointer-events:auto;
+    }
+    .ol-layerswitcher{
+        background:var(--glass);
+        border-radius:10px;
+        box-shadow:0 10px 30px rgba(2,6,23,0.18);
+        padding:8px;
+        width:280px;
+        max-height:58vh;
+        overflow:auto;
+        font-family:Inter, Arial, sans-serif;
+        color:#0b1220;
+    }
+    .ol-layerswitcher .group > label{ font-weight:600; color:#0b1220; }
+    .ol-layerswitcher .ol-layerswitcher-layer > label{ font-weight:500; color:#0b1220; }
+
+    /* Legend */
+    .map-legend{
+        position:absolute;
+        left:12px;
+        bottom:12px;
+        z-index:1200;
+        background:var(--glass);
+        padding:10px 12px;
+        border-radius:10px;
+        box-shadow:0 10px 30px rgba(2,6,23,0.12);
+        font-family:Inter, Arial, sans-serif;
+        color:#0b1220;
+        font-size:13px;
+        line-height:1.4;
+    }
+    .map-legend strong{ display:block; margin-bottom:6px; font-weight:700; }
+
+    /* small responsive tweaks */
+    @media (max-width:640px){
+        .search-box input{ width:120px; }
+        .ol-layerswitcher{ width:220px; top:68px; }
+    }
+</style>
+
+<script>
+(function(){
+    // Wait for DOM and for map & ol to be present
+    function ready(fn){
+        if(document.readyState !== 'loading') return fn();
+        document.addEventListener('DOMContentLoaded', fn);
+    }
+
+    ready(function(){
+        // Ensure header-right exists
+        const header = document.getElementById('header');
+        if(!header) return;
+        let right = header.querySelector('.header-right');
+        if(!right){
+            right = document.createElement('div');
+            right.className = 'header-right';
+            header.appendChild(right);
+        }
+
+        // Build search UI
+        const searchWrap = document.createElement('div');
+        searchWrap.className = 'search-box';
+        searchWrap.innerHTML = '<input id="geoSearch" placeholder="Search place or address" aria-label="Search (press Enter)"><button id="clearSearch" title="Clear">Clear</button>';
+        right.prepend(searchWrap);
+
+        const input = document.getElementById('geoSearch');
+        const clearBtn = document.getElementById('clearSearch');
+
+        // Marker layer holder
+        let markerLayer = null;
+
+        function addMarkerAt(coordLonLat){
+            try{
+                const coord = ol.proj.fromLonLat(coordLonLat);
+                if(markerLayer) map.removeLayer(markerLayer);
+                markerLayer = new ol.layer.Vector({
+                    source: new ol.source.Vector({
+                        features: [ new ol.Feature(new ol.geom.Point(coord)) ]
+                    }),
+                    style: new ol.style.Style({
+                        image: new ol.style.Icon({
+                            anchor: [0.5,1],
+                            src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="12" r="7" fill="%23ff3b30"/><rect x="15.5" y="18" width="1" height="12" fill="%23ff3b30" /></svg>'
+                        })
+                    })
+                });
+                map.addLayer(markerLayer);
+            }catch(e){ console.warn(e); }
+        }
+
+        input.addEventListener('keydown', function(e){
+            if(e.key !== 'Enter') return;
+            const q = input.value.trim();
+            if(!q) return;
+            // Nominatim geocoding (free) — respectful usage: limit requests
+            fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q))
+                .then(r=>r.json())
+                .then(data=>{
+                    if(!data || data.length===0){ alert('Location not found'); return; }
+                    const lon = parseFloat(data[0].lon), lat = parseFloat(data[0].lat);
+                    map.getView().animate({center: ol.proj.fromLonLat([lon,lat]), zoom: 13, duration: 700});
+                    addMarkerAt([lon,lat]);
+                })
+                .catch(()=> alert('Search failed'));
+        });
+
+        clearBtn.addEventListener('click', function(){
+            input.value = '';
+            if(markerLayer){ map.removeLayer(markerLayer); markerLayer = null; }
+        });
+
+        // Move existing OL LayerSwitcher control into a styled floating panel
+        const ls = document.querySelector('.ol-layerswitcher');
+        if(ls){
+            const panel = document.createElement('div');
+            panel.className = 'controls-panel';
+            document.body.appendChild(panel);
+            panel.appendChild(ls);
+        }
+
+        // Add a small legend
+        const legend = document.createElement('div');
+        legend.className = 'map-legend';
+        legend.innerHTML = '<strong>Legend</strong><div style="color:var(--muted)">Carriageways — lines<br>Cadastre — parcels<br>Bus Trips — routes</div>';
+        document.body.appendChild(legend);
+
+        // Add a scale line control if not present
+        if(typeof ol !== 'undefined' && window.map){
+            const hasScale = map.getControls().getArray().some(c => c instanceof ol.control.ScaleLine);
+            if(!hasScale){
+                map.addControl(new ol.control.ScaleLine({bar:true, steps:4, text:true, minWidth:120}));
+            }
+            // Constrain resolution for crisper zoom steps
+            map.getView().setConstrainResolution(true);
+        }
+    });
+})();
+</script>

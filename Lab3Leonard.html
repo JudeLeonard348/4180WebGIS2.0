@@ -1,71 +1,74 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <meta charset="utf-8" />
     <title>Lab3: Web-based Mapping Using OpenLayers</title>
     <script src="https://cdn.jsdelivr.net/npm/ol@v7.1.0/dist/ol.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.1.0/ol.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol-layerswitcher@4.1.2/dist/ol-layerswitcher.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol-layerswitcher@4.1.2/dist-layerswitch.css" />
     <script src="https://cdn.jsdelivr.net/npm/ol-layerswitcher@4.1.2/dist/ol-layerswitcher.js"></script>
-  </head>
+</head>
 
-  <body>
+<body>
     <h3>Lab3: Web-based Mapping Using OpenLayers</h3>
     <h4>Author: Jude Leonard</h4>
     <div id="map" class="map" style="width:800px; height:600px"></div>
 
     <script>
-      var OSM = new ol.layer.Tile({
-        title: 'OSM',
-        type: 'base',
-        visible: false,
-        source: new ol.source.OSM()
-      });
-  var AZURE_KEY = "AMzkV8RrPAI4PHJN0YapJzHbnqufqOAGCKj32MogweyCs9MvP5TYJQQJ99BJACYeBjFSQBDUAAAgAZMPZdvo";
-      var azureRoad = new ol.layer.Tile({
-        title: 'Azure Maps (Road)',
-        type: 'base',
-        visible: true,
-        source: new ol.source.XYZ({
-          url:
-            'https://atlas.microsoft.com/map/tile?api-version=2022-08-01' +
-            '&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}' +
-            '&subscription-key=' + AZURE_KEY,
-          crossOrigin: 'anonymous'
-        })
-      });
+        var OSM = new ol.layer.Tile({
+            title: 'OSM',
+            type: 'base',
+            visible: false,
+            source: new ol.source.OSM()
+        });
+        var AZURE_KEY = "AMzkV8RrPAI4PHJN0YapJzHbnqufqOAGCKj32MogweyCs9MvP5TYJQQJ99BJACYeBjFSQBDUAAAgAZMPZdvo";
+        var azureRoad = new ol.layer.Tile({
+            title: 'Azure Maps (Road)',
+            type: 'base',
+            visible: true,
+            source: new ol.source.XYZ({
+                url: 'https://atlas.microsoft.com/map/tile?api-version=2022-08-01' +
+                    '&tilesetId=microsoft.base.darkgrey&zoom={z}&x={x}&y={y}' +
+                    '&subscription-key=' + AZURE_KEY,
+                crossOrigin: 'anonymous'
+            })
+        });
 
-      var wms = new ol.layer.Tile({
- title: 'States',
-        source: new ol.source.TileWMS({
-          url: 'https://ahocevar.com/geoserver/wms',
-          params: {
-            'LAYERS': 'topp:states',
-            'TILED': true,
-            'FORMAT': 'image/png',
-            'TRANSPARENT': true
-          },
-          serverType: 'geoserver',
-          transition: 0
-        })
-      });
+        var wms = new ol.layer.Tile({
+            title: 'States',
+            source: new ol.source.TileWMS({
+                url: 'https://ahocevar.com/geoserver/wms',
+                params: {
+                    'LAYERS': 'topp:states',
+                    'TILED': true,
+                    'FORMAT': 'image/png',
+                    'TRANSPARENT': true
+                },
+                serverType: 'geoserver',
+                transition: 0
+            })
+        });
 
-      var baseGroup = new ol.layer.Group({
-        title: 'Base maps',
-        layers: [azureRoad, OSM]   
-      });
+        var baseGroup = new ol.layer.Group({
+            title: 'Base maps',
+            layers: [azureRoad, OSM]
+        });
 
-      var map = new ol.Map({
-        target: 'map',
-        layers: [baseGroup, wms],
-        view: new ol.View({
-          center: [-10997148, 4569099],
-          zoom: 4
-        })
-      });
+        var map = new ol.Map({
+            target: 'map',
+            layers: [baseGroup, wms],
+            view: new ol.View({
+                center: [-10997148, 4569099],
+                zoom: 4
+            })
+        });
 
-      map.addControl(new ol.control.LayerSwitcher({ tipLabel: 'Legend' }));
+        map.addControl(new ol.control.LayerSwitcher({
+            tipLabel: 'Legend'
+        }));
     </script>
-  </body>
+</body>
+
 </html>
 

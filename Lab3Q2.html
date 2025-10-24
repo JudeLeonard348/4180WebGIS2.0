@@ -1,0 +1,159 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Lab3: Web-based Mapping Using OpenLayers</title>
+
+    <!-- OpenLayers core -->
+    <script src="https://cdn.jsdelivr.net/npm/ol@v10.6.1/dist/ol.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.6.1/ol.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            width: 800px;
+            height: 600px;
+            border: 1px solid #888;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>Lab 3: Web-based Mapping Using OpenLayers</h3>
+    <h4>Author: Jude Leonard</h4>
+    <div id="map"></div>
+
+    <script>
+        // Azure Maps Key (must be on a single line)
+        const AZURE_KEY = 'AMzkV8RrPAI4PHJN0YapJzHbnqufqOAGCKj32MogweyCs9MvP5TYJQQJ99BJACYeBjFSQBDUAAAgAZMPZdvo';
+
+        // helper to create an Azure Maps tile layer
+        function createAzureLayer(tilesetId, title, visible = false) {
+            return new ol.layer.Tile({
+                title: title,
+                visible: visible,
+                source: new ol.source.XYZ({
+                    url:
+                        'https://atlas.microsoft.com/map/tile?api-version=2022-08-01' +
+                        '&tilesetId=' + encodeURIComponent(tilesetId) +
+                        '&zoom={z}&x={x}&y={y}' +
+                        '&subscription-key=' + AZURE_KEY,
+                    crossOrigin: 'anonymous'
+                })
+            });
+        }
+
+        // create layers in the order requested
+        const layer_road = createAzureLayer('microsoft.base.road', 'Road (microsoft.base.road)');
+        const layer_dark = createAzureLayer('microsoft.base.darkgrey', 'Dark Grey (microsoft.base.darkgrey)');
+        const layer_imagery = createAzureLayer('microsoft.imagery', 'Imagery (microsoft.imagery)', true); // visible by default
+        const layer_terra = createAzureLayer('microsoft.terra.main', 'Terra (microsoft.terra.main)');
+
+        // --- Map Setup ---
+        const map = new ol.Map({
+            target: 'map',
+            layers: [layer_road, layer_dark, layer_imagery, layer_terra], // stack order: first is bottom
+            view: new ol.View({
+                projection: 'EPSG:3857',
+                center: [-10997148, 4569099],
+                zoom: 4
+            })
+        });
+
+        // UI container for legend / layer stack
+        const controlDiv = document.createElement('div');
+        controlDiv.style.position = 'absolute';
+        controlDiv.style.right = '10px';
+        controlDiv.style.top = '10px';
+        controlDiv.style.background = 'rgba(255,255,255,0.95)';
+        controlDiv.style.padding = '8px';
+        controlDiv.style.border = '1px solid #888';
+        controlDiv.style.fontFamily = 'Arial, sans-serif';
+        controlDiv.style.fontSize = '13px';
+        controlDiv.style.maxWidth = '220px';
+        controlDiv.style.zIndex = 1000;
+        controlDiv.innerHTML = '<strong>Basemap stack & legend</strong><br/><small>Choose visible basemap</small><div id="layerList"></div>';
+        document.body.appendChild(controlDiv);
+
+        const layers = [
+            {layer: layer_road, id: 'road', label: 'Road'},
+            {layer: layer_dark, id: 'dark', label: 'Dark Grey'},
+            {layer: layer_imagery, id: 'imagery', label: 'Imagery'},
+            {layer: layer_terra, id: 'terra', label: 'Terra'}
+        ];
+
+        // compute a tile x,y for preview based on current map center
+        function lonLatToTile(lon, lat, z) {
+            const xtile = Math.floor((lon + 180) / 360 * Math.pow(2, z));
+            const latRad = lat * Math.PI / 180;
+            const ytile = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * Math.pow(2, z));
+            return {x: xtile, y: ytile, z: z};
+        }
+
+        const centerLonLat = ol.proj.toLonLat(map.getView().getCenter(), 'EPSG:3857');
+        const previewZ = 3;
+        const tile = lonLatToTile(centerLonLat[0], centerLonLat[1], previewZ);
+
+        // populate legend / radio controls
+        const layerList = controlDiv.querySelector('#layerList');
+        layers.forEach((entry, idx) => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.marginTop = '6px';
+
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'basemap';
+            radio.value = entry.id;
+            radio.style.marginRight = '6px';
+            radio.checked = entry.layer.getVisible();
+            radio.onchange = function () {
+                if (this.checked) {
+                    // make only this layer visible
+                    layers.forEach(e => e.layer.setVisible(false));
+                    entry.layer.setVisible(true);
+                    // ensure stack order remains the same; we keep same zIndex order as array
+                    layers.forEach((e, i) => e.layer.setZIndex(i));
+                }
+            };
+
+            const thumb = document.createElement('img');
+            thumb.width = 80;
+            thumb.height = 50;
+            thumb.style.objectFit = 'cover';
+            thumb.style.border = '1px solid #ccc';
+            thumb.style.marginRight = '8px';
+            thumb.alt = entry.label + ' preview';
+            // construct preview tile url using same template
+            thumb.src = 'https://atlas.microsoft.com/map/tile?api-version=2022-08-01' +
+                '&tilesetId=' + encodeURIComponent((function () {
+                    switch (entry.id) {
+                        case 'road': return 'microsoft.base.road';
+                        case 'dark': return 'microsoft.base.darkgrey';
+                        case 'imagery': return 'microsoft.imagery';
+                        case 'terra': return 'microsoft.terra.main';
+                    }
+                })()) +
+                '&zoom=' + tile.z + '&x=' + tile.x + '&y=' + tile.y +
+                '&subscription-key=' + AZURE_KEY;
+
+            const label = document.createElement('div');
+            label.style.flex = '1';
+            label.innerText = entry.layer.get('title');
+
+            row.appendChild(radio);
+            row.appendChild(thumb);
+            row.appendChild(label);
+            layerList.appendChild(row);
+        });
+
+        // set zIndex according to order in array so bottom-first ordering is clear
+        layers.forEach((e, i) => e.layer.setZIndex(i));
+    </script>
+</body>
+
+</html>
