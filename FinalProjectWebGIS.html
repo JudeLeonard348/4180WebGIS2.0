@@ -1,0 +1,577 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+    <title>Final Project</title>
+
+
+
+    <!-- Optional font -->
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+
+
+   <style>
+        :root{
+            --bg: #0a0e14;
+            --bg2: #050810;
+            --text: #00ff41;
+            --text-muted: #00cc33;
+            --accent: #00ff41;
+            --accent2: #39ff14;
+            --border: #1a3d2e;
+            --hover: #0d1f1a;
+            --radius: 2px;
+            --terminal: #001a0d;
+            --glow: rgba(0, 255, 65, 0.6);
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.92; }
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        html,body{
+            height:100%;
+            margin:0;
+            font-family:'Courier New', Courier, monospace;
+            background:var(--bg);
+            color:var(--text);
+            position:relative;
+            overflow-x:hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0, 255, 65, 0.03) 0px,
+                    transparent 1px,
+                    transparent 2px,
+                    rgba(0, 255, 65, 0.03) 3px
+                );
+            pointer-events: none;
+            z-index: 1;
+            animation: flicker 0.15s infinite;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(transparent, rgba(0, 255, 65, 0.3), transparent);
+            animation: scanline 8s linear infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+
+
+        .wrap{
+
+            max-width:1200px;
+
+            margin:28px auto;
+
+            padding:28px;
+
+            box-sizing:border-box;
+
+        }
+
+
+
+        header.topbar{
+
+            display:flex;
+
+            align-items:center;
+
+            gap:12px;
+
+            margin-bottom:18px;
+
+        }
+
+
+
+        .brand{
+
+            display:flex;
+
+            align-items:center;
+
+            gap:12px;
+
+            background: linear-gradient(135deg,var(--accent),var(--accent-2));
+
+            padding:10px 14px;
+
+            border-radius:12px;
+
+            box-shadow: 0 6px 18px rgba(72,181,255,0.12);
+
+            color:white;
+
+            font-weight:700;
+
+            font-size:18px;
+
+        }
+
+        .brand .logo{
+
+            width:34px;height:34px;border-radius:8px;display:inline-grid;place-items:center;
+
+            background:rgba(255,255,255,0.12);backdrop-filter: blur(4px);
+
+            box-shadow: 0 2px 8px rgba(2,6,23,0.4);
+
+        }
+
+
+
+        .subtitle{
+
+            color:var(--muted);
+
+            font-size:13px;
+
+            margin-left:auto;
+
+        }
+
+
+
+        .panel{
+
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+
+            border:1px solid var(--glass-border);
+
+            border-radius:var(--radius);
+
+            padding:12px;
+
+            box-shadow:var(--shadow);
+
+            overflow:hidden;
+
+        }
+
+
+
+        .controls{
+
+            display:flex;
+
+            gap:8px;
+
+            align-items:center;
+
+            margin-bottom:12px;
+
+        }
+
+
+
+        .btn{
+
+            appearance:none;
+
+            border:0;
+
+            background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+
+            color:var(--muted);
+
+            padding:8px 12px;
+
+            border-radius:10px;
+
+            cursor:pointer;
+
+            font-size:13px;
+
+            display:inline-flex;
+
+            gap:8px;
+
+            align-items:center;
+
+            transition:transform .12s ease, box-shadow .12s ease, color .12s;
+
+            border:1px solid rgba(255,255,255,0.03);
+
+            text-decoration:none;
+
+        }
+
+        .btn:hover{ transform:translateY(-3px); color:white; box-shadow: 0 8px 18px rgba(12,30,60,0.35); }
+
+        .btn.primary{
+
+            background:linear-gradient(90deg,var(--accent),var(--accent-2));
+
+            color:white;
+
+            border:0;
+
+        }
+
+        .btn.ghost{
+
+            background:transparent;
+
+            border:1px dashed rgba(255,255,255,0.04);
+
+        }
+
+
+
+        .note{
+
+            color: #cfe8ff;
+
+            font-size:13px;
+
+            opacity:0.95;
+
+        }
+
+
+
+        .map-card{
+
+            margin-top:6px;
+
+            border-radius:12px;
+
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+
+            border: 1px solid rgba(255,255,255,0.04);
+
+            overflow:hidden;
+
+            height:70vh;
+
+            min-height:420px;
+
+            position:relative;
+
+            display:flex;
+
+            flex-direction:column;
+
+        }
+
+
+
+        .frame-wrap{
+
+            flex:1;
+
+            padding:12px;
+
+            box-sizing:border-box;
+
+        }
+
+
+
+        iframe{
+
+            width:100%;
+
+            height:100%;
+
+            border:0;
+
+            display:block;
+
+            border-radius:10px;
+
+            box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+
+            background:white;
+
+        }
+
+
+
+        .floating{
+
+            position:absolute;
+
+            top:12px; right:12px;
+
+            display:flex;
+
+            gap:8px;
+
+            z-index:5;
+
+        }
+
+
+
+        .legend{
+
+            position:absolute;
+
+            left:12px; bottom:12px;
+
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+
+            border:1px solid rgba(255,255,255,0.04);
+
+            padding:10px 12px;
+
+            border-radius:10px;
+
+            font-size:13px;
+
+            color:var(--muted);
+
+            backdrop-filter: blur(6px);
+
+        }
+
+
+
+        .legend b{ color:white; display:block; margin-bottom:6px; font-weight:600; }
+
+        .legend .row{ display:flex; gap:8px; align-items:center; margin-top:6px; }
+
+        .sw{ width:12px;height:12px;border-radius:3px;display:inline-block; }
+
+
+
+        footer{
+
+            margin-top:16px;
+
+            color:rgba(255,255,255,0.6);
+
+            font-size:13px;
+
+            display:flex;
+
+            justify-content:space-between;
+
+            align-items:center;
+
+        }
+
+
+
+        @media (max-width:900px){
+
+            .wrap{ padding:16px; }
+
+            .brand{ font-size:15px; }
+
+            .map-card{ height:62vh; min-height:360px; }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="wrap">
+
+        <header class="topbar"></header>
+
+            <div class="brand" aria-hidden>
+
+                <div class="logo">ðŸ—ºï¸</div>
+
+                ArcGIS Map Viewer
+
+            </div>
+
+
+
+            <!-- About page link -->
+
+            <a class="btn ghost" href="about.html" title="About this site">About</a>
+
+
+
+            <div class="subtitle">Interactive web map â€” embedded with style</div>
+
+        </header>
+
+
+
+        <div class="panel">
+
+            <div class="controls">
+
+                <button id="openBtn" class="btn primary" title="Open map in new tab">Open Map</button>
+
+                <button id="fullBtn" class="btn" title="Toggle fullscreen">Fullscreen</button>
+
+                <button id="reloadBtn" class="btn ghost" title="Reload map">Reload</button>
+
+                <div style="flex:1"></div>
+
+                <div class="note">Tip: Use the Fullscreen button for the best experience.</div>
+
+            </div>
+
+
+
+            <div class="map-card" id="mapCard">
+
+                <div class="floating" role="group" aria-label="map actions">
+
+                    <button id="smallOpen" class="btn" title="Open in new tab">â†—</button>
+
+                    <button id="smallFull" class="btn" title="Fullscreen">â¤¢</button>
+
+                </div>
+
+
+
+                <div class="frame-wrap">
+
+                    <iframe
+
+                        id="mapFrame"
+
+                        title="ArcGIS Web App"
+
+                        src="https://www.arcgis.com/apps/webappviewer/index.html?id=190385f9aadb4cf1b0dd8759893032db&query=17bf0a87f38-layer-14%2CSITEID%2Cdobs&showLayers=17bec0c0772-layer-12%3B17bf0a87f38-layer-14%3B17bef80feed-layer-14"
+
+                        allowfullscreen
+
+                        sandbox="allow-forms allow-modals allow-popups allow-same-origin allow-scripts">
+
+                    </iframe>
+
+                </div>
+
+
+
+                
+
+            </div>
+
+
+
+            <footer>
+
+                <div>Map ID: <strong style="color:#fff">190385f9aadb4cf1b0dd8759893032db</strong></div>
+
+                <div style="font-size:12px;opacity:0.9">Built with ArcGIS â€¢ <a href="https://www.arcgis.com" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">arcgis.com</a></div>
+
+            </footer>
+
+        </div>
+
+    </div>
+
+
+
+    <script>
+
+        // Simple controls
+
+        const url = "https://www.arcgis.com/apps/webappviewer/index.html?id=190385f9aadb4cf1b0dd8759893032db&query=17bf0a87f38-layer-14%2CSITEID%2Cdobs&showLayers=17bec0c0772-layer-12%3B17bf0a87f38-layer-14%3B17bef80feed-layer-14";
+
+        const openBtn = document.getElementById('openBtn');
+
+        const smallOpen = document.getElementById('smallOpen');
+
+        const fullBtn = document.getElementById('fullBtn');
+
+        const smallFull = document.getElementById('smallFull');
+
+        const reloadBtn = document.getElementById('reloadBtn');
+
+        const mapFrame = document.getElementById('mapFrame');
+
+        const mapCard = document.getElementById('mapCard');
+
+
+
+        openBtn.addEventListener('click', ()=> window.open(url, '_blank', 'noopener'));
+
+        smallOpen.addEventListener('click', ()=> window.open(url, '_blank', 'noopener'));
+
+        reloadBtn.addEventListener('click', ()=> { mapFrame.src = mapFrame.src; });
+
+
+
+        function toggleFull(el){
+
+            if (!document.fullscreenElement) {
+
+                el.requestFullscreen?.();
+
+            } else {
+
+                document.exitFullscreen?.();
+
+            }
+
+        }
+
+        fullBtn.addEventListener('click', ()=> toggleFull(mapCard));
+
+        smallFull.addEventListener('click', ()=> toggleFull(mapCard));
+
+
+
+        // Keyboard shortcut: F key toggles fullscreen for quick demo
+
+        document.addEventListener('keydown', (e)=>{
+
+            if (e.key.toLowerCase() === 'f') toggleFull(mapCard);
+
+            if (e.key === 'r' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); mapFrame.src = mapFrame.src; }
+
+        });
+
+
+
+        // If map fails to load due to cross-origin policies show a friendly message inside iframe area.
+
+        mapFrame.addEventListener('error', ()=>{
+
+            const wrap = mapFrame.parentElement;
+
+            wrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;background:linear-gradient(180deg,rgba(0,0,0,0.45),transparent);font-size:16px;padding:20px;border-radius:10px;">Map failed to load. <a href="'+url+'" target="_blank" rel="noopener" style="color:var(--accent);margin-left:8px;">Open in new tab</a></div>';
+
+        });
+
+    </script>
+
+</body>
+
+</html>

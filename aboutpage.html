@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>About - ArcGIS Map Viewer</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root{
+            --bg: #0a0e14;
+            --bg2: #050810;
+            --text: #00ff41;
+            --text-muted: #00cc33;
+            --accent: #00ff41;
+            --accent2: #39ff14;
+            --border: #1a3d2e;
+            --hover: #0d1f1a;
+            --radius: 2px;
+            --terminal: #001a0d;
+            --glow: rgba(0, 255, 65, 0.6);
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.92; }
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        html,body{
+            height:100%;
+            margin:0;
+            font-family:'Courier New', Courier, monospace;
+            background:var(--bg);
+            color:var(--text);
+            position:relative;
+            overflow-x:hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0, 255, 65, 0.03) 0px,
+                    transparent 1px,
+                    transparent 2px,
+                    rgba(0, 255, 65, 0.03) 3px
+                );
+            pointer-events: none;
+            z-index: 1;
+            animation: flicker 0.15s infinite;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(transparent, rgba(0, 255, 65, 0.3), transparent);
+            animation: scanline 8s linear infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .wrap{
+            max-width:900px;
+            margin:0 auto;
+            padding:40px 60px;
+            box-sizing:border-box;
+            position:relative;
+            z-index:3;
+            min-height:100vh;
+        }
+
+        header.topbar{
+            display:flex;
+            align-items:center;
+            gap:20px;
+            margin-bottom:30px;
+            padding-bottom:15px;
+            border-bottom:1px solid var(--border);
+            position:relative;
+        }
+
+        header.topbar::before {
+            content: '> ABOUT.EXE LOADED';
+            position:absolute;
+            top:-25px;
+            left:0;
+            font-size:10px;
+            color:var(--text-muted);
+            opacity:0.6;
+            letter-spacing:1px;
+        }
+
+        .brand{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            color:var(--text);
+            font-weight:700;
+            font-size:18px;
+            letter-spacing:2px;
+            text-transform:uppercase;
+            text-shadow: 0 0 10px var(--glow);
+            animation: flicker 0.15s infinite;
+            text-decoration:none;
+        }
+        .brand .logo{
+            font-size:20px;
+            filter: drop-shadow(0 0 8px var(--glow));
+        }
+
+        .btn{
+            appearance:none;
+            border:1px solid var(--border);
+            background:var(--terminal);
+            color:var(--text);
+            padding:6px 14px;
+            border-radius:var(--radius);
+            cursor:pointer;
+            font-size:12px;
+            display:inline-flex;
+            gap:8px;
+            align-items:center;
+            transition:all .2s ease;
+            text-decoration:none;
+            font-weight:700;
+            font-family:'Courier New', Courier, monospace;
+            text-transform:uppercase;
+            letter-spacing:1px;
+            margin-left:auto;
+        }
+        .btn:hover{ 
+            background:var(--hover);
+            border-color:var(--text);
+            box-shadow: 0 0 15px var(--glow);
+            text-shadow: 0 0 8px var(--glow);
+        }
+
+        .content-panel{
+            background:var(--terminal);
+            border:1px solid var(--border);
+            border-radius:var(--radius);
+            padding:30px;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+            position:relative;
+            margin-bottom:20px;
+        }
+
+        .content-panel::before {
+            content: '█';
+            position:absolute;
+            top:12px;
+            right:16px;
+            color:var(--text);
+            font-size:10px;
+            animation: blink 1s infinite;
+        }
+
+        h1 {
+            color:var(--accent2);
+            font-size:28px;
+            margin:0 0 20px 0;
+            text-transform:uppercase;
+            letter-spacing:3px;
+            text-shadow: 0 0 15px var(--glow);
+            position:relative;
+            padding-left:20px;
+        }
+
+        h1::before {
+            content: '>';
+            position:absolute;
+            left:0;
+            color:var(--text);
+        }
+
+        h2 {
+            color:var(--text);
+            font-size:18px;
+            margin:30px 0 15px 0;
+            text-transform:uppercase;
+            letter-spacing:2px;
+            position:relative;
+            padding-left:20px;
+        }
+
+        h2::before {
+            content: '//';
+            position:absolute;
+            left:0;
+            color:var(--text-muted);
+            font-size:14px;
+        }
+
+        p {
+            color:var(--text-muted);
+            line-height:1.8;
+            margin:12px 0;
+            font-size:13px;
+            letter-spacing:0.5px;
+        }
+
+        .terminal-line {
+            margin:8px 0;
+            padding-left:20px;
+            position:relative;
+            color:var(--text);
+            font-size:13px;
+        }
+
+        .terminal-line::before {
+            content: '$';
+            position:absolute;
+            left:0;
+            color:var(--accent2);
+            font-weight:bold;
+        }
+
+        .feature-list {
+            list-style:none;
+            padding:0;
+            margin:20px 0;
+        }
+
+        .feature-list li {
+            padding:10px 0 10px 30px;
+            position:relative;
+            color:var(--text-muted);
+            font-size:13px;
+            letter-spacing:0.5px;
+            border-left:2px solid var(--border);
+            margin-left:10px;
+        }
+
+        .feature-list li::before {
+            content: '>';
+            position:absolute;
+            left:-12px;
+            color:var(--text);
+            font-weight:bold;
+        }
+
+        .info-box {
+            background:rgba(0, 255, 65, 0.05);
+            border:1px solid var(--border);
+            padding:15px 20px;
+            margin:20px 0;
+            border-radius:var(--radius);
+            position:relative;
+            padding-left:40px;
+        }
+
+        .info-box::before {
+            content: '[!]';
+            position:absolute;
+            left:15px;
+            top:15px;
+            color:var(--accent2);
+            font-weight:bold;
+        }
+
+        .code-block {
+            background:rgba(0, 0, 0, 0.5);
+            border:1px solid var(--border);
+            padding:15px;
+            margin:15px 0;
+            font-family:'Courier New', Courier, monospace;
+            font-size:12px;
+            color:var(--text);
+            overflow-x:auto;
+            border-radius:var(--radius);
+        }
+
+        footer{
+            margin-top:40px;
+            padding-top:20px;
+            color:var(--text-muted);
+            font-size:11px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            border-top:1px solid var(--border);
+            font-family:'Courier New', Courier, monospace;
+            letter-spacing:1px;
+        }
+
+        footer::before {
+            content: '[END OF FILE]';
+            position:absolute;
+            color:var(--text);
+            font-size:9px;
+        }
+
+        a {
+            color:var(--accent2);
+            text-decoration:none;
+            position:relative;
+            transition:all .2s ease;
+        }
+
+        a:hover {
+            text-shadow: 0 0 8px var(--glow);
+        }
+
+        @media (max-width:900px){
+            .wrap{ padding:24px; }
+            h1 { font-size:22px; }
+            h2 { font-size:16px; }
+            footer::before { display:none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <header class="topbar">
+            <a href="finalprojecttest.html" class="brand">
+                <div class="logo">🗺️</div>
+                ArcGIS Map Viewer
+            </a>
+            <a class="btn" href="finalprojecttest.html">← Back to Map</a>
+        </header>
+
+        <div class="content-panel">
+            <h1>About This Project</h1>
+            
+            <p>Welcome to the ArcGIS Map Viewer terminal interface for the final project. This final project displays a map of the NOAA CORRS. The NOAA CORRS is a network of continuously updating satellite refrence points called the global navigation satellite system or GNSS. These refrence points for meteorilogical surveys and data positioning. They can also be used for GPS positioning as well. The map displayed on this website is actually used to display working statuses for these sensors. The map will show all of the sensors in the U.S. and also shows their working status. This means they could be working, out of commision, or under maintenance  .</p>
+
+            <h2>System Overview</h2>
+            <p>Using an embedded ArcGIS map to create a viewable interactive experience for understnading NOAA CORRS refrence points as well as accompanying data..</p>
+
+            <div class="terminal-line">Map ID: 190385f9aadb4cf1b0dd8759893032db</div>
+            <div class="terminal-line">Status: OPERATIONAL</div>
+            <div class="terminal-line">Security Level: PUBLIC</div>
+
+            <h2>Key Features</h2>
+            <ul class="feature-list">
+                <li>Interactive ArcGIS web map embedded with full functionality</li>
+                <li>Multiple data layers including activity levels for the reference points</li>
+                <li>Fullscreen mode for immersive map exploration</li>
+                <li>Direct query support with layer filtering</li>
+                <li>Easily accesible attribute data added in for further understanding</li>
+                <li>Cool design quality that promotes a fun experience</li>
+            </ul>
+
+            <div class="info-box">
+                <strong>Note:</strong> This interface uses ArcGIS Web AppViewer to render geospatial data. All map interactions are handled through the embedded iframe with sandbox permissions enabled for security.
+            </div>
+
+            <h2>Technical Specifications</h2>
+            <div class="code-block">// Map Configuration
+URL: arcgis.com/apps/webappviewer
+Layers: 3 active layers
+Query Support: ENABLED
+Sandbox Mode: allow-scripts, allow-forms, allow-modals
+Fullscreen API: SUPPORTED</div>
+
+            <h2>Map Layers</h2>
+            <p>The system displays three primary data layers:</p>
+            <ul class="feature-list">
+                <li><strong style="color:#2ab27b;">Active Sites</strong> - Current operational locations</li>
+                <li><strong style="color:#ffb84d;">Survey Areas</strong> - Designated survey zones</li>
+                <li><strong style="color:#6ea8fe;">Basemaps & Tiles</strong> - Geographic reference data</li>
+            </ul>
+
+            <h2>Usage Instructions</h2>
+            <p>Navigate the map using standard ArcGIS controls. Use the toolbar buttons to open the map in a new tab, toggle fullscreen mode, or reload the interface. Keyboard shortcut [F] activates fullscreen mode for rapid access.</p>
+
+            <div class="info-box">
+                <strong>Pro Tip:</strong> Press 'F' on your keyboard to quickly toggle fullscreen mode. Press Ctrl+R (Cmd+R on Mac) to reload the map.
+            </div>
+
+            <h2>About ArcGIS</h2>
+            <p>ArcGIS is a comprehensive geographic information system (GIS) platform developed by Esri. It enables users to create, manage, analyze, and visualize spatial data for various applications including urban planning, environmental monitoring, and data analysis.</p>
+
+            <p>Learn more at <a href="https://www.arcgis.com" target="_blank" rel="noopener">arcgis.com</a></p>
+        </div>
+
+        <footer>
+            <div>© 2024 ArcGIS Map Viewer Project</div>
+            <div>Built with ♥ and code</div>
+        </footer>
+    </div>
+</body>
+</html>
