@@ -39,7 +39,7 @@
     title: 'OSM Basemap'
   });
   // ----- YOUR GEOSERVER URL -----
-const geoserverURL = "http://3.22.175.153:8080/geoserver/web/?171";
+const geoserverURL = "http://3.22.175.153:8080/Jleonard50/wms";
 const layer1 = new ol.layer.Tile({
     source: new ol.source.TileWMS({
       url: geoserverURL,
