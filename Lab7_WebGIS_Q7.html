@@ -25,9 +25,9 @@
 <div id="map"></div>
 
 <div class="layerswitcher">
-  <label><input type="checkbox" id="layer1" checked> sef_nwi_landuse</label><br>
-  <label><input type="checkbox" id="layer2" checked> lidar_stream</label><br>
-  <label><input type="checkbox" id="layer3" checked> sef_roads</label>
+  <label><input type="checkbox" id="layer1" checked>sef_contours</label><br>
+  <label><input type="checkbox" id="layer2" checked>ws77_poly</label><br>
+  <label><input type="checkbox" id="layer3" checked>sef_contours</label>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
@@ -59,7 +59,7 @@ const layer1 = new ol.layer.Tile({
   const layer3 = new ol.layer.Tile({
     source: new ol.source.TileWMS({
       url: geoserverURL,
-      params: { 'LAYERS': 'sef_contours', 'TILED': true }
+      params: { 'LAYERS': 'Jleonard:sef_contours', 'TILED': true }
     }),
     visible: true
   });
