@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OpenLayers + GeoServer Layers</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    #map { width: 100%; height: 100%; }
+
+    .layerswitcher {
+      position: absolute;
+      top: 10px;
+      right: 10px;                 /* <-- moved to top-right */
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      font-family: Arial;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="layerswitcher">
+  <label><input type="checkbox" id="layer1" checked> sef_nwi_landuse</label><br>
+  <label><input type="checkbox" id="layer2" checked> lidar_stream</label><br>
+  <label><input type="checkbox" id="layer3" checked> sef_roads</label>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ol@v7.3.0/dist/ol.js"></script>
+<script>
+
+  // ----- BASEMAP -----
+  const osm = new ol.layer.Tile({
+    source: new ol.source.OSM(),
+    title: 'OSM Basemap'
+  });
+  // ----- YOUR GEOSERVER URL -----
+const geoserverURL = "http://3.22.175.153:8080/geoserver/web/?171";
+const layer1 = new ol.layer.Tile({
+    source: new ol.source.TileWMS({
+      url: geoserverURL,
+      params: { 'LAYERS': 'Jleonard50:sef_contours', 'TILED': true }
+    }),
+    visible: true
+  });
+
+  const layer2 = new ol.layer.Tile({
+    source: new ol.source.TileWMS({
+      url: geoserverURL,
+      params: { 'LAYERS': 'Jleonard50:sef_boundary_100ft', 'TILED': true }
+    }),
+    visible: true
+  });
+
+  const layer3 = new ol.layer.Tile({
+    source: new ol.source.TileWMS({
+      url: geoserverURL,
+      params: { 'LAYERS': 'Jleonard50:lidar_stream', 'TILED': true }
+    }),
+    visible: true
+  });
+
+  // ----- MAP -----
+  const map = new ol.Map({
+    target: 'map',
+    layers: [osm, layer1, layer2, layer3],
+    view: new ol.View({
+      center: ol.proj.fromLonLat([-81.0, 33.8]),
+      zoom: 7
+    })
+  });
+
+  // ----- LAYER TOGGLES -----
+  document.getElementById('layer1').addEventListener('change', e => {
+    layer1.setVisible(e.target.checked);
+  });
+  document.getElementById('layer2').addEventListener('change', e => {
+    layer2.setVisible(e.target.checked);
+  });
+  document.getElementById('layer3').addEventListener('change', e => {
+    layer3.setVisible(e.target.checked);
+  });
+
+</script>
+
+</body>
+</html>
+
